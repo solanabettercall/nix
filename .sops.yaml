@@ -1,0 +1,6 @@
+keys:
+  - &user age1x3h3ukfqnmkm0rjet6pm57e5qaxhr57z0tsrwgmv49mh5k6gw50qtfe4xd
+creation_rules:
+  - key_groups:
+      - age:
+          - *user
