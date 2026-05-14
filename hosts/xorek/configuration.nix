@@ -48,7 +48,8 @@
   sops = {
     package = sopsnix.packages.${pkgs.system}.sops-install-secrets;
     defaultSopsFile = ../../secrets/default.yaml;
-    age.keyFile = "/var/keys/age.key";
+    age.keyFile = "/var/lib/sops-nix/key.txt";
+    age.generateKey = true;
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
     secrets.ssh_key = {
       path = "${config.users.users.clackgot.home}/.ssh/id_ed25519";
