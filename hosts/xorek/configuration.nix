@@ -71,8 +71,10 @@
     useUserPackages = true;
     users.clackgot = {
       home.stateVersion = "24.11";
-      programs.ssh.matchBlocks = {
-        "github.com" = {
+      programs.ssh = {
+        enable = true;
+        matchBlocks = {
+          "github.com" = {
           hostname = "github.com";
           user = "git";
           identityFile = "~/.ssh/id_ed25519";
