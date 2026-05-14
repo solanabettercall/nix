@@ -31,18 +31,12 @@
     enable = true;
     settings = {
       PasswordAuthentication = false;
-      PermitRootLogin = "prohibit-password";
+      PermitRootLogin = "no";
     };
   };
 
-  # Добавь свой публичный ключ
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu0ibcTXkcosUdMfW+rX8zmtz3Q52lf1PVBQ0KWoORWxqPQ+bctFbX892FMcAR8oISz2KoMhDtIqOacZ+CdbZtLBbA/rLaKKQZl0BmK9N4jyTHV1FHadUtaYl2VimKrwpuD3eR+3Ju1JH2QwULfqNfYaHiAtEpt91JYr+FSQR9BsUW022spRo/m5vZzJLNnSCZi/oX867aRbhewsE4RTLpAP8PWUVrykHlv0DeRW9ao1XoCcgM1oA5sbvdyIMeHOZokemcHRFAn7dXfKkpytMC/XatCKdT0bjSmpBjvPucaHUrD0ipCxxXL5pwviLyuz8vwkh2yKFGXZgeJX9DABCFXMkwFJRyZTkaiZHC3e06gneah0YLl0PuBRFDO9s12xsAkPREQbUcvV2yWDZHezmdhC2+lpZlmwjB+qd0p4AOo2E0sNV378WUniegkX4iqsg9RdRo3ERTAS3nxMyClDnb4Ni40RHHKbqNiR/Xd0NkQ3ZN/gxhphIt6uiHDDhdFhk= user@kirill-desktop"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPaR5chAudCG96WFgYZ347g2SdW1bt/Sn0B51SKDjd+G clackgot@91.108.227.42"
-  ];
-
   # ── Пользователь ──────────────────────────────────────────────────────────
-  users.users.admin = {
+  users.users.clackgot = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
