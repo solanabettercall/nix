@@ -1,0 +1,8 @@
+keys:
+  - &user age1x3h3ukfqnmkm0rjet6pm57e5qaxhr57z0tsrwgmv49mh5k6gw50qtfe4xd
+  - &xorek age1aw2vvld34fpwn2w6qrxyxghvjkh7cwzhd2dk9260pwlwr4g5ae9qj2fclv
+creation_rules:
+  - key_groups:
+      - age:
+          - *user
+          - *xorek
