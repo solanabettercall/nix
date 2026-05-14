@@ -2,7 +2,7 @@
   description = "NixOS VPS config";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     disko = {
       url = "github:nix-community/disko";
