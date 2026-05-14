@@ -69,6 +69,7 @@
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
+    verbose = true;
     users.clackgot = {
       home.stateVersion = "24.11";
       programs.ssh.matchBlocks = {
@@ -89,6 +90,7 @@
     htop
     curl
     wget
+    home-manager
   ];
 
   # ── Временная зона ────────────────────────────────────────────────────────
