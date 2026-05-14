@@ -11,12 +11,12 @@
   };
 
   outputs = { self, nixpkgs, disko, ... }: {
-    nixosConfigurations.vps = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.xorek = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
         disko.nixosModules.disko
-        ./hosts/vps/disk-config.nix
-        ./hosts/vps/configuration.nix
+        ./hosts/xorek/disk-config.nix
+        ./hosts/xorek/configuration.nix
       ];
     };
   };
