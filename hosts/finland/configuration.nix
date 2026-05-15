@@ -1,4 +1,4 @@
-{ pkgs, config, lib, sopsnix, ... }:
+{ pkgs, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -46,27 +46,6 @@
   };
 
   security.sudo.wheelNeedsPassword = false;
-
-  # ── Secrets ────────────────────────────────────────────────────────────────
-  sops = {
-    package = sopsnix.packages.${pkgs.system}.sops-install-secrets;
-    defaultSopsFile = ../../secrets/default.yaml;
-    age.keyFile = "/var/lib/sops-nix/key.txt";
-    age.generateKey = true;
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-    secrets.ssh_key = {
-      path = "${config.users.users.clackgot.home}/.ssh/id_ed25519";
-      owner = config.users.users.clackgot.name;
-      group = "users";
-      mode = "0600";
-    };
-    secrets."ssh_key.pub" = {
-      path = "${config.users.users.clackgot.home}/.ssh/id_ed25519.pub";
-      owner = config.users.users.clackgot.name;
-      group = "users";
-      mode = "0644";
-    };
-  };
 
   # ── Home-manager ────────────────────────────────────────────────────────────
   home-manager = {
