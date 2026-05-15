@@ -12,13 +12,16 @@
 
   # ── Сеть ──────────────────────────────────────────────────────────────────
   networking = {
-    hostName = "xorek";
+    hostName = "finland";
     useDHCP = false;
     interfaces.ens3.ipv4.addresses = [{
-      address = "31.76.230.57";
-      prefixLength = 24;
+      address = "109.206.243.227";
+      prefixLength = 32;
     }];
-    defaultGateway = "31.76.230.1";
+    defaultGateway = {
+      address = "172.0.0.1";
+      interface = "ens3";
+    };
     nameservers = [ "8.8.8.8" "1.1.1.1" ];
     firewall = {
       enable = true;
@@ -75,14 +78,14 @@
         enable = true;
         matchBlocks = {
           "github.com" = {
-          hostname = "github.com";
-          user = "git";
-          identityFile = "~/.ssh/id_ed25519";
-          identitiesOnly = true;
+            hostname = "github.com";
+            user = "git";
+            identityFile = "~/.ssh/id_ed25519";
+            identitiesOnly = true;
+          };
         };
       };
     };
-  };
   };
 
   # ── Базовые пакеты ────────────────────────────────────────────────────────
