@@ -22,17 +22,24 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }: {
-    nixosConfigurations.xorek = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      specialArgs = { sopsnix = sops-nix; };
-      modules = [
-        disko.nixosModules.disko
-        sops-nix.nixosModules.sops
-        home-manager.nixosModules.home-manager
-        ./hosts/xorek/disk-config.nix
-        ./hosts/xorek/configuration.nix
-      ];
+  outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }:
+    let
+      mkHost = hostName: nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { sopsnix = sops-nix; };
+        modules = [
+          disko.nixosModules.disko
+          sops-nix.nixosModules.sops
+          home-manager.nixosModules.home-manager
+          ./hosts/common.nix
+          ./hosts/${hostName}/disk-config.nix
+          ./hosts/${hostName}/configuration.nix
+        ];
+      };
+    in {
+      nixosConfigurations = {
+        moscow = mkHost "moscow";
+        finland = mkHost "finland";
+      };
     };
-  };
 }
