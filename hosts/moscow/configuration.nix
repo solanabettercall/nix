@@ -44,26 +44,6 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  # ── Home-manager ────────────────────────────────────────────────────────────
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    users.clackgot = {
-      home.stateVersion = "24.11";
-      programs.ssh = {
-        enable = true;
-        matchBlocks = {
-          "github.com" = {
-          hostname = "github.com";
-          user = "git";
-          identityFile = "~/.ssh/id_ed25519";
-          identitiesOnly = true;
-        };
-      };
-    };
-  };
-  };
-
   # ── Базовые пакеты ────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     git
