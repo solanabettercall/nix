@@ -20,9 +20,14 @@
       url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL/release-24.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }:
+  outputs = { self, nixpkgs, disko, sops-nix, home-manager, nixos-wsl, ... }:
     let
       mkHost = hostName: nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
@@ -31,6 +36,7 @@
           disko.nixosModules.disko
           sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
+          ./hosts/base.nix
           ./hosts/common.nix
           ./hosts/${hostName}/disk-config.nix
           ./hosts/${hostName}/configuration.nix
@@ -40,6 +46,15 @@
       nixosConfigurations = {
         moscow = mkHost "moscow";
         finland = mkHost "finland";
+        wsl = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            nixos-wsl.nixosModules.default
+            home-manager.nixosModules.home-manager
+            ./hosts/base.nix
+            ./hosts/wsl/configuration.nix
+          ];
+        };
       };
     };
 }

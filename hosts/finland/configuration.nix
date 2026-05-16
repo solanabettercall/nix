@@ -41,29 +41,4 @@ in
     };
   };
 
-  # ── Пользователь ──────────────────────────────────────────────────────────
-  users.users.clackgot = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = (import ../../ssh-keys.nix).clackgot;
-  };
-
-  security.sudo.wheelNeedsPassword = false;
-
-  # ── Базовые пакеты ────────────────────────────────────────────────────────
-  environment.systemPackages = with pkgs; [
-    git
-    vim
-    htop
-    curl
-    wget
-  ];
-
-  # ── Nix ──────────────────────────────────────────────────────────────────
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-  # ── Временная зона ────────────────────────────────────────────────────────
-  time.timeZone = "UTC";
-
-  system.stateVersion = "24.11";
 }
