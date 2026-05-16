@@ -1,4 +1,8 @@
-{ pkgs, config, sopsnix, ... }:
+{ pkgs, config, lib, sopsnix, ... }:
+let
+  inventory = import ../hosts.nix;
+  machines = inventory.machines;
+in
 {
   services.qemuGuest.enable = true;
 
@@ -8,6 +12,21 @@
       type = "ed25519";
     }
   ];
+
+  programs.ssh.knownHosts = {
+    moscow = {
+      hostNames = [ "moscow" machines.moscow.address ];
+      publicKey = machines.moscow.sshHostKey;
+    };
+    finland = {
+      hostNames = [ "finland" machines.finland.address ];
+      publicKey = machines.finland.sshHostKey;
+    };
+    github = {
+      hostNames = inventory.knownHosts.github.hostNames;
+      publicKey = inventory.knownHosts.github.sshHostKey;
+    };
+  };
 
   sops = {
     package = sopsnix.packages.${pkgs.system}.sops-install-secrets;
@@ -64,13 +83,13 @@
             identitiesOnly = true;
           };
           moscow = {
-            hostname = "31.76.230.57";
+            hostname = machines.moscow.address;
             user = "clackgot";
             identityFile = "~/.ssh/id_ed25519";
             identitiesOnly = true;
           };
           finland = {
-            hostname = "109.206.243.227";
+            hostname = machines.finland.address;
             user = "clackgot";
             identityFile = "~/.ssh/id_ed25519";
             identitiesOnly = true;

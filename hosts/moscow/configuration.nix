@@ -1,4 +1,7 @@
 { pkgs, ... }:
+let
+  host = (import ../../hosts.nix).machines.moscow;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -15,10 +18,10 @@
     hostName = "moscow";
     useDHCP = false;
     interfaces.ens3.ipv4.addresses = [{
-      address = "31.76.230.57";
-      prefixLength = 24;
+      address = host.address;
+      prefixLength = host.prefixLength;
     }];
-    defaultGateway = "31.76.230.1";
+    defaultGateway = host.gateway;
     nameservers = [ "8.8.8.8" "1.1.1.1" ];
     firewall = {
       enable = true;
