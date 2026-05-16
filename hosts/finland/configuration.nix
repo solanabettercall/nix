@@ -1,4 +1,7 @@
 { pkgs, ... }:
+let
+  host = (import ../../hosts.nix).machines.finland;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -15,12 +18,12 @@
     hostName = "finland";
     useDHCP = false;
     interfaces.ens3.ipv4.addresses = [{
-      address = "109.206.243.227";
-      prefixLength = 32;
+      address = host.address;
+      prefixLength = host.prefixLength;
     }];
     defaultGateway = {
-      address = "172.0.0.1";
-      interface = "ens3";
+      address = host.gateway;
+      interface = host.gatewayInterface;
     };
     nameservers = [ "8.8.8.8" "1.1.1.1" ];
     firewall = {
@@ -46,26 +49,6 @@
   };
 
   security.sudo.wheelNeedsPassword = false;
-
-  # ── Home-manager ────────────────────────────────────────────────────────────
-  home-manager = {
-    useGlobalPkgs = true;
-    useUserPackages = true;
-    users.clackgot = {
-      home.stateVersion = "24.11";
-      programs.ssh = {
-        enable = true;
-        matchBlocks = {
-          "github.com" = {
-            hostname = "github.com";
-            user = "git";
-            identityFile = "~/.ssh/id_ed25519";
-            identitiesOnly = true;
-          };
-        };
-      };
-    };
-  };
 
   # ── Базовые пакеты ────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
