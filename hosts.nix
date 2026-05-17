@@ -2,6 +2,12 @@
   providers = {
     xorek = {
       knownMachineProviders = [ "xorek" ];
+      wireguard = {
+        interface = "wg0";
+        prefixLength = 24;
+        persistentKeepalive = 25;
+        trusted = true;
+      };
       machines = {
         moscow = {
           address = "31.76.230.57";

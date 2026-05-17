@@ -42,6 +42,7 @@
           home-manager.nixosModules.home-manager
           ./modules/base/users.nix
           ./modules/base/packages.nix
+          ./modules/profiles/net-tools.nix
           ./modules/base/nix.nix
           ./modules/base/home-manager.nix
           ./modules/secrets/system.nix
