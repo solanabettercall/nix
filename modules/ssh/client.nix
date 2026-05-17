@@ -1,48 +1,73 @@
-{ inventory, machineProvider, ... }:
+{ lib, inventory, machineProvider, ... }:
 let
-  provider = inventory.providers.${machineProvider};
-  machines = builtins.foldl' (
-    knownMachines: knownProvider:
-      knownMachines // inventory.providers.${knownProvider}.machines
-  ) { } provider.knownMachineProviders;
-
-  sshPort = machine: machine.sshPort or 22;
-
-  sshHostNames = name: machine:
-    [ name ] ++ (
-      if sshPort machine != 22
-      then [ "[${machine.address}]:${toString (sshPort machine)}" ]
-      else [ machine.address ]
-    );
-
-  mkKnownHost = name: machine: {
-    hostNames = sshHostNames name machine;
-    publicKey = machine.sshHostKey;
-  };
-
-  mkMatchBlock = name: machine: {
-    hostname = machine.address;
-    user = "clackgot";
-    port = sshPort machine;
+  user = "clackgot";
+  commonSsh = {
+    inherit user;
     identityFile = "~/.ssh/id_ed25519";
     identitiesOnly = true;
   };
+
+  provider = inventory.providers.${machineProvider};
+  knownProviderNames = provider.knownMachineProviders or [ machineProvider ];
+  knownMachines = lib.mergeAttrsList (
+    map (providerName: inventory.providers.${providerName}.machines) knownProviderNames
+  );
+  machinesWithWireguard = lib.filterAttrs (
+    _name: machine: machine ? wireguard
+  ) knownMachines;
+
+  machinePort = machine: machine.sshPort or 22;
+
+  knownHostNames = name: machine:
+    [ name ] ++ (
+      if machinePort machine == 22
+      then [ machine.address ]
+      else [ "[${machine.address}]:${toString (machinePort machine)}" ]
+    ) ++ lib.optional (machine ? wireguard) machine.wireguard.address;
+
+  machineMatchBlock = _name: machine: commonSsh // {
+    hostname = machine.address;
+    port = machinePort machine;
+  };
+
+  wireguardMatchBlock = _name: machine: commonSsh // {
+    hostname = machine.wireguard.address;
+    extraOptions = {
+      # The current VPS-to-VPS WireGuard path resets OpenSSH's default
+      # post-quantum hybrid KEX. Plain Curve25519 is stable there.
+      KexAlgorithms = "curve25519-sha256";
+    };
+  };
+
+  wireguardMatchBlocks = lib.mapAttrs' (
+    name: machine:
+      lib.nameValuePair "${name}-wg" (wireguardMatchBlock name machine)
+  ) machinesWithWireguard;
+
+  machineKnownHosts = builtins.mapAttrs (
+    name: machine: {
+      hostNames = knownHostNames name machine;
+      publicKey = machine.sshHostKey;
+    }
+  ) knownMachines;
+
+  githubMatchBlock = {
+    "github.com" = commonSsh // {
+      hostname = "github.com";
+      user = "git";
+    };
+  };
 in
 {
-  programs.ssh.knownHosts =
-    (builtins.mapAttrs mkKnownHost machines) // inventory.external;
+  programs.ssh.knownHosts = machineKnownHosts // inventory.external;
 
-  home-manager.users.clackgot = {
+  home-manager.users.${user} = {
     programs.ssh = {
       enable = true;
-      matchBlocks = (builtins.mapAttrs mkMatchBlock machines) // {
-        "github.com" = {
-          hostname = "github.com";
-          user = "git";
-          identityFile = "~/.ssh/id_ed25519";
-          identitiesOnly = true;
-        };
-      };
+      matchBlocks =
+        (builtins.mapAttrs machineMatchBlock knownMachines)
+        // wireguardMatchBlocks
+        // githubMatchBlock;
     };
   };
 }

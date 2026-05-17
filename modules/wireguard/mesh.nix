@@ -1,7 +1,7 @@
-{ lib, pkgs, config, inventory, ... }:
+{ lib, pkgs, config, inventory, machineProvider, ... }:
 let
   hostName = config.networking.hostName;
-  machines = inventory.providers.xorek.machines;
+  machines = inventory.providers.${machineProvider}.machines;
   host =
     if builtins.hasAttr hostName machines
     then machines.${hostName}

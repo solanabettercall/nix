@@ -46,6 +46,7 @@
           ./modules/base/home-manager.nix
           ./modules/secrets/system.nix
           ./modules/secrets/clackgot.nix
+          ./modules/network/hosts.nix
           ./modules/ssh/server.nix
           ./modules/ssh/client.nix
           ./modules/wireguard/mesh.nix
