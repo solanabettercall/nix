@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ inventory, ... }:
 let
-  host = (import ../../hosts.nix).machines.finland;
+  host = inventory.providers.xorek.machines.finland;
 in
 {
   imports = [
@@ -31,36 +31,6 @@ in
       allowedTCPPorts = [ 22 ];
     };
   };
-
-  # ── SSH ───────────────────────────────────────────────────────────────────
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "no";
-    };
-  };
-
-  # ── Пользователь ──────────────────────────────────────────────────────────
-  users.users.clackgot = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = (import ../../ssh-keys.nix).clackgot;
-  };
-
-  security.sudo.wheelNeedsPassword = false;
-
-  # ── Базовые пакеты ────────────────────────────────────────────────────────
-  environment.systemPackages = with pkgs; [
-    git
-    vim
-    htop
-    curl
-    wget
-  ];
-
-  # ── Nix ──────────────────────────────────────────────────────────────────
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # ── Временная зона ────────────────────────────────────────────────────────
   time.timeZone = "UTC";
