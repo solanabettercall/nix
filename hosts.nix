@@ -8,6 +8,11 @@
           prefixLength = 24;
           gateway = "31.76.230.1";
           sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBc95eQyBa8K/u8xIORn6ES8PQvgB5WTdeB8LRK6OsNH root@moscow";
+          wireguard = {
+            address = "10.77.0.1";
+            listenPort = 51820;
+            publicKey = "FF6DIXUFbcnv5U/w+uWWYC7gGfx0G25yK4Ed1s/UpSo=";
+          };
         };
 
         finland = {
@@ -16,6 +21,11 @@
           gateway = "172.0.0.1";
           gatewayInterface = "ens3";
           sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8KXMEwSy8FaWzTMnyRK+cp9PK6yNy/hcHEXfn8RPE0 root@finland";
+          wireguard = {
+            address = "10.77.0.2";
+            listenPort = 51820;
+            publicKey = "2858b+QvM/6HSrXECeO1S4fIXy6uytIxHDvMxiCqCGo=";
+          };
         };
       };
     };

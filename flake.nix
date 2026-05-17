@@ -48,6 +48,7 @@
           ./modules/secrets/clackgot.nix
           ./modules/ssh/server.nix
           ./modules/ssh/client.nix
+          ./modules/wireguard/mesh.nix
           providerModules.${provider}
           ./hosts/${name}/disk-config.nix
           ./hosts/${name}/configuration.nix
