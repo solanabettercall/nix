@@ -17,6 +17,7 @@ lib.mkIf (wireguard != null) {
   ];
 
   networking.firewall.allowedUDPPorts = [ wireguard.listenPort ];
+  networking.firewall.trustedInterfaces = [ "wg0" ];
 
   sops.secrets."wireguard/${hostName}/private_key" = {
     owner = "root";
