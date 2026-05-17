@@ -8,6 +8,14 @@
         persistentKeepalive = 25;
         trusted = true;
       };
+      clients = {
+        bubble-home = {
+          wireguard = {
+            address = "10.77.0.10";
+            publicKey = "+EEnaXWubYTIWHSGAgNoHeRsB3DDP+NvyxZVVt+LDTI=";
+          };
+        };
+      };
       machines = {
         moscow = {
           address = "31.76.230.57";
