@@ -1,7 +1,7 @@
 { pkgs, config, sopsnix, ... }:
 {
   sops = {
-    package = sopsnix.packages.${pkgs.system}.sops-install-secrets;
+    package = sopsnix.packages.${pkgs.stdenv.hostPlatform.system}.sops-install-secrets;
     defaultSopsFile = ../../secrets/system.yaml;
     age.keyFile = "/var/lib/sops-nix/key.txt";
     secrets."users/clackgot/sops_age_key" = {

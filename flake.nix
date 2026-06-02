@@ -2,7 +2,7 @@
   description = "NixOS machines config";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     disko = {
       url = "github:nix-community/disko";
@@ -17,7 +17,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -42,12 +42,15 @@
           home-manager.nixosModules.home-manager
           ./modules/base/users.nix
           ./modules/base/packages.nix
+          ./modules/profiles/net-tools.nix
           ./modules/base/nix.nix
           ./modules/base/home-manager.nix
           ./modules/secrets/system.nix
           ./modules/secrets/clackgot.nix
+          ./modules/network/hosts.nix
           ./modules/ssh/server.nix
           ./modules/ssh/client.nix
+          ./modules/wireguard/mesh.nix
           providerModules.${provider}
           ./hosts/${name}/disk-config.nix
           ./hosts/${name}/configuration.nix
@@ -62,6 +65,9 @@
         finland = mkMachine {
           name = "finland";
           provider = "xorek";
+          roles = [
+            ./roles/amneziawg-exit.nix
+          ];
         };
         nixos1 = mkMachine {
           name = "nixos1";

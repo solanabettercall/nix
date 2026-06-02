@@ -2,7 +2,7 @@
 {
   home-manager.users.clackgot = { config, ... }: {
     sops = {
-      package = sopsnix.packages.${pkgs.system}.sops-install-secrets;
+      package = sopsnix.packages.${pkgs.stdenv.hostPlatform.system}.sops-install-secrets;
       defaultSopsFile = ../../secrets/users/clackgot.yaml;
       age.keyFile = "/var/lib/sops-nix/users/clackgot/key.txt";
       secrets."ssh/deploy/clackgot/private" = {
