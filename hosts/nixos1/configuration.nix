@@ -23,7 +23,7 @@ in
     nameservers = [ "1.1.1.1" "8.8.8.8" ];
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 22 ];
+      allowedTCPPorts = [ inventory.ports.public.ssh ];
     };
   };
 

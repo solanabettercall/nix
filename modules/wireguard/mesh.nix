@@ -49,6 +49,7 @@ lib.mkIf (wireguard != null) {
 
   networking.wireguard.interfaces.${interfaceName} = {
     ips = [ "${wireguard.address}/${toString mesh.prefixLength}" ];
+    mtu = mesh.mtu or null;
     listenPort = wireguard.listenPort;
     privateKeyFile = config.sops.secrets."wireguard/${hostName}/private_key".path;
     peers =

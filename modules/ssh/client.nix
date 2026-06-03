@@ -16,11 +16,11 @@ let
     _name: machine: machine ? wireguard
   ) knownMachines;
 
-  machinePort = machine: machine.sshPort or 22;
+  machinePort = machine: machine.sshPort or inventory.ports.public.ssh;
 
   knownHostNames = name: machine:
     [ name ] ++ (
-      if machinePort machine == 22
+      if machinePort machine == inventory.ports.public.ssh
       then [ machine.address ]
       else [ "[${machine.address}]:${toString (machinePort machine)}" ]
     ) ++ lib.optional (machine ? wireguard) machine.wireguard.address;
