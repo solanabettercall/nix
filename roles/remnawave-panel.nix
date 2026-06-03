@@ -5,6 +5,8 @@ let
   panelConfigEnv = "/etc/remnawave/panel.env";
   panelSecretEnv = config.sops.secrets."remnawave/panel_env".path;
   ports = inventory.ports.remnawave;
+  wireguardInterface = inventory.providers.xorek.wireguard.interface;
+  podmanSubnet = "10.89.10.0/24";
   containerServices = [
     "podman-remnawave-db"
     "podman-remnawave-valkey"
@@ -79,7 +81,7 @@ in
     REDIS_PORT = 6379;
     PANEL_DOMAIN = panelDomain;
     FRONT_END_DOMAIN = panelUrl;
-    SUB_PUBLIC_DOMAIN = "${panelUrl}/api/sub";
+    SUB_PUBLIC_DOMAIN = "${panelDomain}/api/sub";
     METRICS_USER = "admin";
     WEBHOOK_ENABLED = "false";
   };
@@ -105,7 +107,7 @@ in
       };
       script = ''
         ${pkgs.podman}/bin/podman network exists remnawave \
-          || ${pkgs.podman}/bin/podman network create remnawave
+          || ${pkgs.podman}/bin/podman network create --subnet ${podmanSubnet} remnawave
       '';
     };
   } // lib.genAttrs containerServices (_name: {
@@ -144,6 +146,17 @@ in
       email = inventory.domains.acmeEmail;
       server = "https://acme-v02.api.letsencrypt.org/directory";
     };
+  };
+
+  # Let Remnawave panel containers reach node APIs over the WireGuard mesh.
+  # The SNAT is needed because remote peers only route 10.77.0.1/32 back here,
+  # not Podman's private bridge subnets.
+  networking.nat = {
+    enable = true;
+    externalInterface = wireguardInterface;
+    internalIPs = [
+      podmanSubnet
+    ];
   };
 
   networking.firewall.allowedTCPPorts = [
