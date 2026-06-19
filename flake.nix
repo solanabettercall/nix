@@ -61,12 +61,16 @@
         moscow = mkMachine {
           name = "moscow";
           provider = "xorek";
+          roles = [
+            ./roles/remnawave-panel.nix
+          ];
         };
         finland = mkMachine {
           name = "finland";
           provider = "xorek";
           roles = [
             ./roles/amneziawg-exit.nix
+            ./roles/remnawave-node.nix
           ];
         };
         nixos1 = mkMachine {

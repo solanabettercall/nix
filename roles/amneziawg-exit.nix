@@ -1,7 +1,7 @@
-{ config, ... }:
+{ config, inventory, ... }:
 let
   interfaceName = "awg0";
-  listenPort = 51821;
+  listenPort = inventory.ports.wireguard.amneziaExit;
 in
 {
 
