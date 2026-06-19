@@ -1,6 +1,6 @@
 { inventory, ... }:
 let
-  host = inventory.providers.virtualbox.machines.nixos1;
+  host = inventory.providers.virtualbox.machines.hermes;
 in
 {
   imports = [
@@ -13,7 +13,7 @@ in
   };
 
   networking = {
-    hostName = "nixos1";
+    hostName = "hermes";
     useDHCP = false;
     interfaces.${host.interface}.ipv4.addresses = [{
       address = host.address;

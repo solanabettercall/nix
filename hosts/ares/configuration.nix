@@ -1,6 +1,6 @@
 { inventory, ... }:
 let
-  host = inventory.providers.xorek.machines.finland;
+  host = inventory.providers.xorek.machines.ares;
 in
 {
   imports = [
@@ -15,7 +15,7 @@ in
 
   # ── Сеть ──────────────────────────────────────────────────────────────────
   networking = {
-    hostName = "finland";
+    hostName = "ares";
     useDHCP = false;
     interfaces.ens3.ipv4.addresses = [{
       address = host.address;

@@ -24,7 +24,7 @@ in
     type = "amneziawg";
     ips = [ "10.78.0.1/24" ];
     listenPort = listenPort;
-    privateKeyFile = config.sops.secrets."wireguard/finland/private_key".path;
+    privateKeyFile = config.sops.secrets."wireguard/${config.networking.hostName}/private_key".path;
     extraOptions = {
       Jc = 5;
       Jmin = 50;

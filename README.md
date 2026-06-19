@@ -6,10 +6,10 @@ NixOS flake с конфигурациями машин из этого репо�
 
 Команды запускаются из корня репозитория.
 
-Чтобы собрать и активировать конфигурацию `finland` на удаленной машине:
+Чтобы собрать и активировать конфигурацию `ares` на удаленной машине:
 
 ```sh
-nix run nixpkgs#nixos-rebuild -- test --flake .#finland --build-host finland --target-host finland --sudo --show-trace
+nix run nixpkgs#nixos-rebuild -- test --flake .#ares --build-host ares --target-host ares --sudo --show-trace
 ```
 
 `test` активирует новую конфигурацию, но не делает ее загрузочной по
@@ -18,7 +18,7 @@ nix run nixpkgs#nixos-rebuild -- test --flake .#finland --build-host finland --t
 Чтобы применить конфигурацию постоянно, используй `switch`:
 
 ```sh
-nix run nixpkgs#nixos-rebuild -- switch --flake .#finland --build-host finland --target-host finland --sudo --show-trace
+nix run nixpkgs#nixos-rebuild -- switch --flake .#ares --build-host ares --target-host ares --sudo --show-trace
 ```
 
 Для других машин схема такая же: меняется flake-атрибут и имя удаленного хоста.

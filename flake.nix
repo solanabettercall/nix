@@ -58,15 +58,15 @@
       };
     in {
       nixosConfigurations = {
-        finland = mkMachine {
-          name = "finland";
+        ares = mkMachine {
+          name = "ares";
           provider = "xorek";
           roles = [
             ./roles/amneziawg-exit.nix
           ];
         };
-        nixos1 = mkMachine {
-          name = "nixos1";
+        hermes = mkMachine {
+          name = "hermes";
           provider = "virtualbox";
         };
       };

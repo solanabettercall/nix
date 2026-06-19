@@ -6,7 +6,7 @@ let
     inherit rootDomain;
 
     hosts = {
-      finland = mkDomain "finland";
+      ares = mkDomain "ares";
     };
 
     services = {
@@ -56,13 +56,14 @@ in
         };
       };
       machines = {
-        finland = {
+        ares = {
           address = "109.206.243.227";
-          hostName = domains.hosts.finland;
+          hostName = domains.hosts.ares;
+          location = "finland";
           prefixLength = 32;
           gateway = "172.0.0.1";
           gatewayInterface = "ens3";
-          sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8KXMEwSy8FaWzTMnyRK+cp9PK6yNy/hcHEXfn8RPE0 root@finland";
+          sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8KXMEwSy8FaWzTMnyRK+cp9PK6yNy/hcHEXfn8RPE0 root@ares";
           wireguard = {
             address = "10.77.0.2";
             listenPort = ports.wireguard.mesh;
@@ -75,12 +76,12 @@ in
     virtualbox = {
       knownMachineProviders = [ "xorek" "virtualbox" ];
       machines = {
-        nixos1 = {
+        hermes = {
           address = "192.168.10.50";
           interface = "enp0s3";
           prefixLength = 24;
           gateway = "192.168.10.1";
-          sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKSYsKs7B7dQUO244ty/PxzS17SLZqy47RHmlZKAG44r root@nixos1";
+          sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKSYsKs7B7dQUO244ty/PxzS17SLZqy47RHmlZKAG44r root@hermes";
         };
       };
     };
