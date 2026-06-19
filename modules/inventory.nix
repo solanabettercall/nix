@@ -5,7 +5,12 @@ let
 
   machineIds = builtins.attrNames cfg.machines;
   userIds = builtins.attrNames cfg.users;
+  sshPublicKeyIds = builtins.attrNames cfg.ssh.publicKeys;
+  wireguardPublicKeyIds = builtins.attrNames cfg.wireguard.publicKeys;
   knownMachine = machineId: builtins.hasAttr machineId cfg.machines;
+  knownUser = userId: builtins.hasAttr userId cfg.users;
+  knownSshPublicKey = publicKeyId: builtins.hasAttr publicKeyId cfg.ssh.publicKeys;
+  knownWireGuardPublicKey = publicKeyId: builtins.hasAttr publicKeyId cfg.wireguard.publicKeys;
 
   unknownProviderMachines = lib.filterAttrs
     (
@@ -37,14 +42,52 @@ let
     )
     cfg.ssh.hostKeys.byMachine;
 
+  unknownAuthorizedKeyUsers = lib.filterAttrs
+    (
+      userId: _keyIds: !(knownUser userId)
+    )
+    cfg.ssh.authorizedKeys.byUser;
+
+  unknownAuthorizedKeyIds = lib.filterAttrs
+    (
+      _userId: keyIds: builtins.any (keyId: !(knownSshPublicKey keyId)) keyIds
+    )
+    cfg.ssh.authorizedKeys.byUser;
+
+  unknownHostKeyIds = lib.filterAttrs
+    (
+      _machineId: hostKey: !(knownSshPublicKey hostKey.publicKeyId)
+    )
+    cfg.ssh.hostKeys.byMachine;
+
+  unknownExternalKnownHostKeyIds = lib.filterAttrs
+    (
+      _knownHostId: knownHost: !(knownSshPublicKey knownHost.publicKeyId)
+    )
+    cfg.externalKnownHosts;
+
   unknownWireGuardMachines = lib.filterAttrs
     (
       machineId: _member: !(knownMachine machineId)
     )
     cfg.wireguard.mesh.members.byMachine;
 
+  unknownWireGuardMemberPublicKeyIds = lib.filterAttrs
+    (
+      _machineId: member: !(knownWireGuardPublicKey member.publicKeyId)
+    )
+    cfg.wireguard.mesh.members.byMachine;
+
+  unknownWireGuardClientPublicKeyIds = lib.filterAttrs
+    (
+      _clientId: client: !(knownWireGuardPublicKey client.publicKeyId)
+    )
+    cfg.wireguard.mesh.clients;
+
   machineIdType = types.enum machineIds;
   userIdType = types.enum userIds;
+  sshPublicKeyIdType = types.enum sshPublicKeyIds;
+  wireguardPublicKeyIdType = types.enum wireguardPublicKeyIds;
 in
 {
   options.local.inventory = mkOption {
@@ -67,9 +110,6 @@ in
             options = {
               isNormalUser = mkOption { type = types.bool; };
               sudo = mkOption { type = types.bool; };
-              ssh.authorizedKeys = mkOption {
-                type = types.listOf types.str;
-              };
             };
           });
         };
@@ -144,36 +184,59 @@ in
           });
         };
 
-        ssh.hostKeys.byMachine = mkOption {
-          type = types.attrsOf (types.submodule {
-            options.publicKey = mkOption { type = types.str; };
-          });
-        };
-
-        wireguard.mesh = mkOption {
+        ssh = mkOption {
           type = types.submodule {
             options = {
-              interface = mkOption { type = types.str; };
-              mtu = mkOption { type = types.nullOr types.ints.unsigned; };
-              prefixLength = mkOption { type = types.ints.unsigned; };
-              persistentKeepalive = mkOption { type = types.nullOr types.ints.unsigned; };
-              trusted = mkOption { type = types.bool; };
-              members.byMachine = mkOption {
+              publicKeys = mkOption {
+                type = types.attrsOf types.str;
+              };
+              authorizedKeys.byUser = mkOption {
+                type = types.attrsOf (types.listOf sshPublicKeyIdType);
+              };
+              hostKeys.byMachine = mkOption {
                 type = types.attrsOf (types.submodule {
-                  options = {
-                    address = mkOption { type = types.str; };
-                    listenPort = mkOption { type = types.port; };
-                    publicKey = mkOption { type = types.str; };
+                  options.publicKeyId = mkOption {
+                    type = sshPublicKeyIdType;
                   };
                 });
               };
-              clients = mkOption {
-                type = types.attrsOf (types.submodule {
+            };
+          };
+        };
+
+        wireguard = mkOption {
+          type = types.submodule {
+            options = {
+              publicKeys = mkOption {
+                type = types.attrsOf types.str;
+              };
+              mesh = mkOption {
+                type = types.submodule {
                   options = {
-                    address = mkOption { type = types.str; };
-                    publicKey = mkOption { type = types.str; };
+                    interface = mkOption { type = types.str; };
+                    mtu = mkOption { type = types.nullOr types.ints.unsigned; };
+                    prefixLength = mkOption { type = types.ints.unsigned; };
+                    persistentKeepalive = mkOption { type = types.nullOr types.ints.unsigned; };
+                    trusted = mkOption { type = types.bool; };
+                    members.byMachine = mkOption {
+                      type = types.attrsOf (types.submodule {
+                        options = {
+                          address = mkOption { type = types.str; };
+                          listenPort = mkOption { type = types.port; };
+                          publicKeyId = mkOption { type = wireguardPublicKeyIdType; };
+                        };
+                      });
+                    };
+                    clients = mkOption {
+                      type = types.attrsOf (types.submodule {
+                        options = {
+                          address = mkOption { type = types.str; };
+                          publicKeyId = mkOption { type = wireguardPublicKeyIdType; };
+                        };
+                      });
+                    };
                   };
-                });
+                };
               };
             };
           };
@@ -183,7 +246,7 @@ in
           type = types.attrsOf (types.submodule {
             options = {
               hostNames = mkOption { type = types.listOf types.str; };
-              publicKey = mkOption { type = types.str; };
+              publicKeyId = mkOption { type = sshPublicKeyIdType; };
             };
           });
         };
@@ -216,8 +279,32 @@ in
         message = "local.inventory.ssh.hostKeys.byMachine references unknown machines: ${toString (builtins.attrNames unknownSshHostKeyMachines)}";
       }
       {
+        assertion = unknownAuthorizedKeyUsers == { };
+        message = "local.inventory.ssh.authorizedKeys.byUser references unknown users: ${toString (builtins.attrNames unknownAuthorizedKeyUsers)}";
+      }
+      {
+        assertion = unknownAuthorizedKeyIds == { };
+        message = "local.inventory.ssh.authorizedKeys.byUser references unknown public keys for users: ${toString (builtins.attrNames unknownAuthorizedKeyIds)}";
+      }
+      {
+        assertion = unknownHostKeyIds == { };
+        message = "local.inventory.ssh.hostKeys.byMachine references unknown public keys for machines: ${toString (builtins.attrNames unknownHostKeyIds)}";
+      }
+      {
+        assertion = unknownExternalKnownHostKeyIds == { };
+        message = "local.inventory.externalKnownHosts references unknown public keys: ${toString (builtins.attrNames unknownExternalKnownHostKeyIds)}";
+      }
+      {
         assertion = unknownWireGuardMachines == { };
         message = "local.inventory.wireguard.mesh.members.byMachine references unknown machines: ${toString (builtins.attrNames unknownWireGuardMachines)}";
+      }
+      {
+        assertion = unknownWireGuardMemberPublicKeyIds == { };
+        message = "local.inventory.wireguard.mesh.members.byMachine references unknown WireGuard public keys for machines: ${toString (builtins.attrNames unknownWireGuardMemberPublicKeyIds)}";
+      }
+      {
+        assertion = unknownWireGuardClientPublicKeyIds == { };
+        message = "local.inventory.wireguard.mesh.clients references unknown WireGuard public keys for clients: ${toString (builtins.attrNames unknownWireGuardClientPublicKeyIds)}";
       }
     ];
   };

@@ -7,6 +7,7 @@ let
   members = mesh.members.byMachine;
   clients = mesh.clients;
   interfaceName = mesh.interface;
+  publicKey = peer: inventory.wireguard.publicKeys.${peer.publicKeyId};
   wireguard =
     if builtins.hasAttr hostName members
     then members.${hostName}
@@ -19,7 +20,7 @@ let
 
   machinePeerConfig = name: peer:
     {
-      publicKey = peer.publicKey;
+      publicKey = publicKey peer;
       endpoint = "${machines.${name}.address}:${toString peer.listenPort}";
       allowedIPs = [ "${peer.address}/32" ];
     } // lib.optionalAttrs (mesh.persistentKeepalive != null) {
@@ -27,7 +28,7 @@ let
     };
 
   clientPeerConfig = _name: peer: {
-    publicKey = peer.publicKey;
+    publicKey = publicKey peer;
     allowedIPs = [ "${peer.address}/32" ];
   };
 in

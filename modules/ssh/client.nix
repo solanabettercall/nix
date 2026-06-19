@@ -58,7 +58,7 @@ let
     (
       name: machine: {
         hostNames = knownHostNames name machine;
-        publicKey = inventory.ssh.hostKeys.byMachine.${name}.publicKey;
+        publicKey = inventory.ssh.publicKeys.${inventory.ssh.hostKeys.byMachine.${name}.publicKeyId};
       }
     )
     knownMachines;
@@ -86,7 +86,14 @@ let
   };
 in
 {
-  programs.ssh.knownHosts = machineKnownHosts // inventory.externalKnownHosts;
+  programs.ssh.knownHosts = machineKnownHosts // builtins.mapAttrs
+    (
+      _knownHostId: knownHost: {
+        inherit (knownHost) hostNames;
+        publicKey = inventory.ssh.publicKeys.${knownHost.publicKeyId};
+      }
+    )
+    inventory.externalKnownHosts;
 
   home-manager.users.${user} = {
     programs.ssh = {
