@@ -21,8 +21,7 @@ nix run nixpkgs#nixos-rebuild -- test --flake .#finland --build-host finland --t
 nix run nixpkgs#nixos-rebuild -- switch --flake .#finland --build-host finland --target-host finland --sudo --show-trace
 ```
 
-Для других машин схема такая же: меняется flake-атрибут и имя удаленного хоста,
-например `.#moscow` и `moscow`.
+Для других машин схема такая же: меняется flake-атрибут и имя удаленного хоста.
 
 ## Полезные проверки
 

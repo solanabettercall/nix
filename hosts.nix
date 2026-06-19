@@ -6,12 +6,10 @@ let
     inherit rootDomain;
 
     hosts = {
-      moscow = mkDomain "moscow";
       finland = mkDomain "finland";
     };
 
     services = {
-      remnawavePanel = mkDomain "chupapi";
       media = mkDomain "media";
     };
 
@@ -28,14 +26,6 @@ let
     wireguard = {
       mesh = 51820;
       amneziaExit = 51821;
-    };
-
-    remnawave = {
-      backend = 3000;
-      metrics = 3001;
-      panelProxy = 3080;
-      nodeApi = 2222;
-      reality = 443;
     };
 
     media = {
@@ -66,19 +56,6 @@ in
         };
       };
       machines = {
-        moscow = {
-          address = "31.76.230.57";
-          hostName = domains.hosts.moscow;
-          prefixLength = 24;
-          gateway = "31.76.230.1";
-          sshHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBc95eQyBa8K/u8xIORn6ES8PQvgB5WTdeB8LRK6OsNH root@moscow";
-          wireguard = {
-            address = "10.77.0.1";
-            listenPort = ports.wireguard.mesh;
-            publicKey = "FF6DIXUFbcnv5U/w+uWWYC7gGfx0G25yK4Ed1s/UpSo=";
-          };
-        };
-
         finland = {
           address = "109.206.243.227";
           hostName = domains.hosts.finland;
