@@ -1,6 +1,8 @@
-{ inventory, ... }:
+{ config, ... }:
 let
-  host = inventory.providers.xorek.machines.ares;
+  inventory = config.local.inventory;
+  machine = inventory.machines.ares;
+  network = inventory.network.staticIpv4.byMachine.ares;
 in
 {
   imports = [
@@ -17,13 +19,13 @@ in
   networking = {
     hostName = "ares";
     useDHCP = false;
-    interfaces.ens3.ipv4.addresses = [{
-      address = host.address;
-      prefixLength = host.prefixLength;
+    interfaces.${network.interface}.ipv4.addresses = [{
+      address = machine.address;
+      prefixLength = network.prefixLength;
     }];
     defaultGateway = {
-      address = host.gateway;
-      interface = host.gatewayInterface;
+      address = network.gateway.address;
+      interface = network.gateway.interface;
     };
     nameservers = [ "8.8.8.8" "1.1.1.1" ];
     firewall = {

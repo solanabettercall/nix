@@ -1,5 +1,6 @@
-{ config, inventory, ... }:
+{ config, ... }:
 let
+  inventory = config.local.inventory;
   interfaceName = "awg0";
   listenPort = inventory.ports.wireguard.amneziaExit;
 in

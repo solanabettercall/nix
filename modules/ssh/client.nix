@@ -1,37 +1,45 @@
-{ lib, inventory, machineProvider, ... }:
+{ lib, config, ... }:
 let
-  user = "clackgot";
+  inventory = config.local.inventory;
+  hostName = config.networking.hostName;
+  user = inventory.deploy.defaultUserId;
   commonSsh = {
     inherit user;
     identityFile = "~/.ssh/id_ed25519";
     identitiesOnly = true;
   };
 
-  provider = inventory.providers.${machineProvider};
-  knownProviderNames = provider.knownMachineProviders or [ machineProvider ];
-  knownMachines = lib.mergeAttrsList (
-    map (providerName: inventory.providers.${providerName}.machines) knownProviderNames
-  );
-  machinesWithWireguard = lib.filterAttrs (
-    _name: machine: machine ? wireguard
-  ) knownMachines;
+  currentProviderId = inventory.providers.byMachine.${hostName};
+  knownProviderIds = inventory.providers.definitions.${currentProviderId}.knownProviderIds;
+  knownMachines = lib.filterAttrs
+    (
+      name: _machine: builtins.elem inventory.providers.byMachine.${name} knownProviderIds
+    )
+    inventory.machines;
+  wireguardMembers = inventory.wireguard.mesh.members.byMachine;
+  machinesWithWireguard = lib.filterAttrs
+    (name: _machine:
+      builtins.hasAttr name wireguardMembers
+    )
+    knownMachines;
 
-  machinePort = machine: machine.sshPort or inventory.ports.public.ssh;
+  machinePort = _name: inventory.ports.public.ssh;
+  wireguardAddress = name: wireguardMembers.${name}.address;
 
   knownHostNames = name: machine:
     [ name ] ++ (
-      if machinePort machine == inventory.ports.public.ssh
+      if machinePort name == inventory.ports.public.ssh
       then [ machine.address ]
-      else [ "[${machine.address}]:${toString (machinePort machine)}" ]
-    ) ++ lib.optional (machine ? wireguard) machine.wireguard.address;
+      else [ "[${machine.address}]:${toString (machinePort name)}" ]
+    ) ++ lib.optional (builtins.hasAttr name wireguardMembers) (wireguardAddress name);
 
-  machineMatchBlock = _name: machine: commonSsh // {
+  machineMatchBlock = name: machine: commonSsh // {
     hostname = machine.address;
-    port = machinePort machine;
+    port = machinePort name;
   };
 
-  wireguardMatchBlock = _name: machine: commonSsh // {
-    hostname = machine.wireguard.address;
+  wireguardMatchBlock = name: _machine: commonSsh // {
+    hostname = wireguardAddress name;
     extraOptions = {
       # The current VPS-to-VPS WireGuard path resets OpenSSH's default
       # post-quantum hybrid KEX. Plain Curve25519 is stable there.
@@ -39,17 +47,21 @@ let
     };
   };
 
-  wireguardMatchBlocks = lib.mapAttrs' (
-    name: machine:
-      lib.nameValuePair "${name}-wg" (wireguardMatchBlock name machine)
-  ) machinesWithWireguard;
+  wireguardMatchBlocks = lib.mapAttrs'
+    (
+      name: machine:
+        lib.nameValuePair "${name}-wg" (wireguardMatchBlock name machine)
+    )
+    machinesWithWireguard;
 
-  machineKnownHosts = builtins.mapAttrs (
-    name: machine: {
-      hostNames = knownHostNames name machine;
-      publicKey = machine.sshHostKey;
-    }
-  ) knownMachines;
+  machineKnownHosts = builtins.mapAttrs
+    (
+      name: machine: {
+        hostNames = knownHostNames name machine;
+        publicKey = inventory.ssh.hostKeys.byMachine.${name}.publicKey;
+      }
+    )
+    knownMachines;
 
   githubMatchBlock = {
     "github.com" = commonSsh // {
@@ -74,7 +86,7 @@ let
   };
 in
 {
-  programs.ssh.knownHosts = machineKnownHosts // inventory.external;
+  programs.ssh.knownHosts = machineKnownHosts // inventory.externalKnownHosts;
 
   home-manager.users.${user} = {
     programs.ssh = {

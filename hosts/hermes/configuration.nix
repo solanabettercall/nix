@@ -1,6 +1,8 @@
-{ inventory, ... }:
+{ config, ... }:
 let
-  host = inventory.providers.virtualbox.machines.hermes;
+  inventory = config.local.inventory;
+  machine = inventory.machines.hermes;
+  network = inventory.network.staticIpv4.byMachine.hermes;
 in
 {
   imports = [
@@ -15,11 +17,11 @@ in
   networking = {
     hostName = "hermes";
     useDHCP = false;
-    interfaces.${host.interface}.ipv4.addresses = [{
-      address = host.address;
-      prefixLength = host.prefixLength;
+    interfaces.${network.interface}.ipv4.addresses = [{
+      address = machine.address;
+      prefixLength = network.prefixLength;
     }];
-    defaultGateway = host.gateway;
+    defaultGateway = network.gateway.address;
     nameservers = [ "1.1.1.1" "8.8.8.8" ];
     firewall = {
       enable = true;

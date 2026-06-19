@@ -1,35 +1,34 @@
-{ lib, pkgs, config, inventory, machineProvider, ... }:
+{ lib, pkgs, config, ... }:
 let
   hostName = config.networking.hostName;
-  provider = inventory.providers.${machineProvider};
-  machines = provider.machines;
-  clients = provider.clients or { };
-  mesh = provider.wireguard;
+  inventory = config.local.inventory;
+  machines = inventory.machines;
+  mesh = inventory.wireguard.mesh;
+  members = mesh.members.byMachine;
+  clients = mesh.clients;
   interfaceName = mesh.interface;
-  host =
-    if builtins.hasAttr hostName machines
-    then machines.${hostName}
-    else { };
-  wireguard = host.wireguard or null;
-  machinePeers = lib.filterAttrs (
-    name: machine: name != hostName && machine ? wireguard
-  ) machines;
-  clientPeers = lib.filterAttrs (
-    _name: client: client ? wireguard
-  ) clients;
+  wireguard =
+    if builtins.hasAttr hostName members
+    then members.${hostName}
+    else null;
+  machinePeers = lib.filterAttrs
+    (
+      name: _member: name != hostName
+    )
+    members;
 
-  machinePeerConfig = _name: peer:
+  machinePeerConfig = name: peer:
     {
-      publicKey = peer.wireguard.publicKey;
-      endpoint = "${peer.address}:${toString peer.wireguard.listenPort}";
-      allowedIPs = [ "${peer.wireguard.address}/32" ];
-    } // lib.optionalAttrs (mesh ? persistentKeepalive) {
+      publicKey = peer.publicKey;
+      endpoint = "${machines.${name}.address}:${toString peer.listenPort}";
+      allowedIPs = [ "${peer.address}/32" ];
+    } // lib.optionalAttrs (mesh.persistentKeepalive != null) {
       persistentKeepalive = mesh.persistentKeepalive;
     };
 
   clientPeerConfig = _name: peer: {
-    publicKey = peer.wireguard.publicKey;
-    allowedIPs = [ "${peer.wireguard.address}/32" ];
+    publicKey = peer.publicKey;
+    allowedIPs = [ "${peer.address}/32" ];
   };
 in
 lib.mkIf (wireguard != null) {
@@ -49,11 +48,11 @@ lib.mkIf (wireguard != null) {
 
   networking.wireguard.interfaces.${interfaceName} = {
     ips = [ "${wireguard.address}/${toString mesh.prefixLength}" ];
-    mtu = mesh.mtu or null;
+    mtu = mesh.mtu;
     listenPort = wireguard.listenPort;
     privateKeyFile = config.sops.secrets."wireguard/${hostName}/private_key".path;
     peers =
       (lib.mapAttrsToList machinePeerConfig machinePeers)
-      ++ (lib.mapAttrsToList clientPeerConfig clientPeers);
+      ++ (lib.mapAttrsToList clientPeerConfig clients);
   };
 }

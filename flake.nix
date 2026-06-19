@@ -24,50 +24,54 @@
 
   outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }:
     let
-      inventory = import ./hosts.nix;
+      inventory = import ./inventory;
       providerModules = {
         xorek = ./modules/providers/xorek.nix;
         virtualbox = ./modules/providers/virtualbox.nix;
       };
-      mkMachine = { name, provider, roles ? [ ] }: nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          inherit inventory;
-          sopsnix = sops-nix;
-          machineProvider = provider;
+      mkMachine = { name, roles ? [ ] }:
+        let
+          provider = inventory.providers.byMachine.${name};
+        in
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = {
+            inherit inventory;
+            sopsnix = sops-nix;
+            machineId = name;
+          };
+          modules = [
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            ./modules/inventory.nix
+            ./modules/base/users.nix
+            ./modules/base/packages.nix
+            ./modules/profiles/net-tools.nix
+            ./modules/base/nix.nix
+            ./modules/base/home-manager.nix
+            ./modules/secrets/system.nix
+            ./modules/secrets/users.nix
+            ./modules/network/hosts.nix
+            ./modules/ssh/server.nix
+            ./modules/ssh/client.nix
+            ./modules/wireguard/mesh.nix
+            providerModules.${provider}
+            ./hosts/${name}/disk-config.nix
+            ./hosts/${name}/configuration.nix
+          ] ++ roles;
         };
-        modules = [
-          disko.nixosModules.disko
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          ./modules/base/users.nix
-          ./modules/base/packages.nix
-          ./modules/profiles/net-tools.nix
-          ./modules/base/nix.nix
-          ./modules/base/home-manager.nix
-          ./modules/secrets/system.nix
-          ./modules/secrets/clackgot.nix
-          ./modules/network/hosts.nix
-          ./modules/ssh/server.nix
-          ./modules/ssh/client.nix
-          ./modules/wireguard/mesh.nix
-          providerModules.${provider}
-          ./hosts/${name}/disk-config.nix
-          ./hosts/${name}/configuration.nix
-        ] ++ roles;
-      };
-    in {
+    in
+    {
       nixosConfigurations = {
         ares = mkMachine {
           name = "ares";
-          provider = "xorek";
           roles = [
             ./roles/amneziawg-exit.nix
           ];
         };
         hermes = mkMachine {
           name = "hermes";
-          provider = "virtualbox";
         };
       };
     };

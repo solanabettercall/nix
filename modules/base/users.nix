@@ -1,11 +1,16 @@
-{ config, ... }:
-{
-  users.users.clackgot = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    hashedPasswordFile = config.sops.secrets."users/clackgot/password_hash".path;
-    openssh.authorizedKeys.keys = (import ../../ssh-keys.nix).clackgot;
+{ config, lib, ... }:
+let
+  inventory = config.local.inventory;
+  sudoUsers = lib.filterAttrs (_userId: user: user.sudo) inventory.users;
+  mkUser = userId: user: {
+    isNormalUser = user.isNormalUser;
+    extraGroups = lib.optional user.sudo "wheel";
+    hashedPasswordFile = config.sops.secrets."users/${userId}/password_hash".path;
+    openssh.authorizedKeys.keys = user.ssh.authorizedKeys;
   };
+in
+{
+  users.users = builtins.mapAttrs mkUser inventory.users;
 
-  security.sudo.wheelNeedsPassword = false;
+  security.sudo.wheelNeedsPassword = sudoUsers == { };
 }

@@ -1,4 +1,10 @@
-{ sopsnix, ... }:
+{ config, sopsnix, ... }:
+let
+  inventory = config.local.inventory;
+  mkHomeUser = _userId: _user: {
+    home.stateVersion = "24.11";
+  };
+in
 {
   home-manager = {
     useGlobalPkgs = true;
@@ -6,8 +12,6 @@
     sharedModules = [
       sopsnix.homeManagerModules.sops
     ];
-    users.clackgot = {
-      home.stateVersion = "24.11";
-    };
+    users = builtins.mapAttrs mkHomeUser inventory.users;
   };
 }

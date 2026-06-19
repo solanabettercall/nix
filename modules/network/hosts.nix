@@ -1,32 +1,47 @@
-{ lib, inventory, machineProvider, ... }:
+{ lib, config, ... }:
 let
-  provider = inventory.providers.${machineProvider};
-  knownProviderNames = provider.knownMachineProviders or [ machineProvider ];
-  knownMachines = lib.mergeAttrsList (
-    map (providerName: inventory.providers.${providerName}.machines) knownProviderNames
-  );
+  inventory = config.local.inventory;
+  hostName = config.networking.hostName;
+  currentProviderId = inventory.providers.byMachine.${hostName};
+  knownProviderIds = inventory.providers.definitions.${currentProviderId}.knownProviderIds;
+  knownMachines = lib.filterAttrs
+    (
+      name: _machine: builtins.elem inventory.providers.byMachine.${name} knownProviderIds
+    )
+    inventory.machines;
+  wireguardMembers = inventory.wireguard.mesh.members.byMachine;
+
+  wireguardAddress = name:
+    if builtins.hasAttr name wireguardMembers
+    then wireguardMembers.${name}.address
+    else null;
 
   machineHostEntries = lib.flatten (
-    lib.mapAttrsToList (
-      name: machine:
-        [
-          {
-            address = machine.address;
-            aliases = [ name ];
+    lib.mapAttrsToList
+      (
+        name: machine:
+          [
+            {
+              address = machine.address;
+              aliases = [ name ];
+            }
+          ] ++ lib.optional (wireguardAddress name != null) {
+            address = wireguardAddress name;
+            aliases = [ "${name}-wg" ];
           }
-        ] ++ lib.optional (machine ? wireguard) {
-          address = machine.wireguard.address;
-          aliases = [ "${name}-wg" ];
-        }
-    ) knownMachines
+      )
+      knownMachines
   );
 
-  hostsByAddress = lib.foldl' (
-    result: entry:
-      result // {
-        ${entry.address} = (result.${entry.address} or [ ]) ++ entry.aliases;
-      }
-  ) { } machineHostEntries;
+  hostsByAddress = lib.foldl'
+    (
+      result: entry:
+        result // {
+          ${entry.address} = (result.${entry.address} or [ ]) ++ entry.aliases;
+        }
+    )
+    { }
+    machineHostEntries;
 in
 {
   networking.hosts = hostsByAddress;
