@@ -1,11 +1,11 @@
 { lib, pkgs, config, ... }:
 let
-  hostName = config.networking.hostName;
-  inventory = config.local.inventory;
-  machines = inventory.machines;
-  mesh = inventory.wireguard.mesh;
+  inherit (config.networking) hostName;
+  inherit (config.local) inventory;
+  inherit (inventory) machines;
+  inherit (inventory.wireguard) mesh;
   members = mesh.members.byMachine;
-  clients = mesh.clients;
+  inherit (mesh) clients;
   interfaceName = mesh.interface;
   publicKey = peer: inventory.wireguard.publicKeys.${peer.publicKeyId};
   wireguard =
@@ -24,7 +24,7 @@ let
       endpoint = "${machines.${name}.address}:${toString peer.listenPort}";
       allowedIPs = [ "${peer.address}/32" ];
     } // lib.optionalAttrs (mesh.persistentKeepalive != null) {
-      persistentKeepalive = mesh.persistentKeepalive;
+      inherit (mesh) persistentKeepalive;
     };
 
   clientPeerConfig = _name: peer: {
@@ -37,23 +37,26 @@ lib.mkIf (wireguard != null) {
     pkgs.wireguard-tools
   ];
 
-  networking.firewall.allowedUDPPorts = [ wireguard.listenPort ];
-  networking.firewall.trustedInterfaces =
-    lib.optional (mesh.trusted or false) interfaceName;
+  networking = {
+    firewall = {
+      allowedUDPPorts = [ wireguard.listenPort ];
+      trustedInterfaces = lib.optional (mesh.trusted or false) interfaceName;
+    };
+
+    wireguard.interfaces.${interfaceName} = {
+      ips = [ "${wireguard.address}/${toString mesh.prefixLength}" ];
+      inherit (mesh) mtu;
+      inherit (wireguard) listenPort;
+      privateKeyFile = config.sops.secrets."wireguard/${hostName}/private_key".path;
+      peers =
+        (lib.mapAttrsToList machinePeerConfig machinePeers)
+        ++ (lib.mapAttrsToList clientPeerConfig clients);
+    };
+  };
 
   sops.secrets."wireguard/${hostName}/private_key" = {
     owner = "root";
     group = "root";
     mode = "0400";
-  };
-
-  networking.wireguard.interfaces.${interfaceName} = {
-    ips = [ "${wireguard.address}/${toString mesh.prefixLength}" ];
-    mtu = mesh.mtu;
-    listenPort = wireguard.listenPort;
-    privateKeyFile = config.sops.secrets."wireguard/${hostName}/private_key".path;
-    peers =
-      (lib.mapAttrsToList machinePeerConfig machinePeers)
-      ++ (lib.mapAttrsToList clientPeerConfig clients);
   };
 }

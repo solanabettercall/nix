@@ -1,6 +1,6 @@
 { config, machineId, ... }:
 let
-  inventory = config.local.inventory;
+  inherit (config.local) inventory;
   machine = inventory.machines.${machineId};
   network = inventory.network.staticIpv4.byMachine.${machineId};
 in
@@ -9,33 +9,33 @@ in
     ./hardware-configuration.nix
   ];
 
-  # ── Загрузчик ─────────────────────────────────────────────────────────────
   boot.loader.grub = {
     enable = true;
     device = "nodev";
   };
 
-  # ── Сеть ──────────────────────────────────────────────────────────────────
   networking = {
     hostName = machineId;
     useDHCP = false;
     interfaces.${network.interface}.ipv4.addresses = [{
-      address = machine.address;
-      prefixLength = network.prefixLength;
+      inherit (machine) address;
+      inherit (network) prefixLength;
     }];
     defaultGateway = {
-      address = network.gateway.address;
-      interface = network.gateway.interface;
+      inherit (network.gateway) address interface;
     };
     nameservers = [ "8.8.8.8" "1.1.1.1" ];
     firewall = {
       enable = true;
-      allowedTCPPorts = [ inventory.ports.public.ssh ];
+      allowedTCPPorts = with inventory.ports.public; [ ssh ];
     };
   };
 
-  # ── Временная зона ────────────────────────────────────────────────────────
-  time.timeZone = "UTC";
+  time = {
+    timeZone = "UTC";
+  };
 
-  system.stateVersion = "24.11";
+  system = {
+    stateVersion = "24.11";
+  };
 }

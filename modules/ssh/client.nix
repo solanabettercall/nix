@@ -1,7 +1,7 @@
 { lib, config, ... }:
 let
-  inventory = config.local.inventory;
-  hostName = config.networking.hostName;
+  inherit (config.local) inventory;
+  inherit (config.networking) hostName;
   user = inventory.deploy.defaultUserId;
   commonSsh = {
     inherit user;
@@ -10,7 +10,7 @@ let
   };
 
   currentProviderId = inventory.providers.byMachine.${hostName};
-  knownProviderIds = inventory.providers.definitions.${currentProviderId}.knownProviderIds;
+  inherit (inventory.providers.definitions.${currentProviderId}) knownProviderIds;
   knownMachines = lib.filterAttrs
     (
       name: _machine: builtins.elem inventory.providers.byMachine.${name} knownProviderIds

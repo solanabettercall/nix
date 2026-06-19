@@ -1,6 +1,6 @@
 { config, sopsnix, ... }:
 let
-  inventory = config.local.inventory;
+  inherit (config.local) inventory;
   mkHomeUser = _userId: _user: {
     home.stateVersion = "24.11";
   };

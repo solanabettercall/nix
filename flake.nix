@@ -22,7 +22,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }:
+  outputs = { nixpkgs, disko, sops-nix, home-manager, ... }:
     let
       inventory = import ./inventory;
       providerModules = {

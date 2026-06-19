@@ -1,6 +1,6 @@
 { lib, pkgs, config, sopsnix, ... }:
 let
-  inventory = config.local.inventory;
+  inherit (config.local) inventory;
   mkUserSecrets = userId: _user: {
     "users/${userId}/sops_age_key" = {
       path = "/var/lib/sops-nix/users/${userId}/key.txt";

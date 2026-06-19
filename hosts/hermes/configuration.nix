@@ -1,6 +1,6 @@
 { config, machineId, ... }:
 let
-  inventory = config.local.inventory;
+  inherit (config.local) inventory;
   machine = inventory.machines.${machineId};
   network = inventory.network.staticIpv4.byMachine.${machineId};
 in
@@ -18,18 +18,22 @@ in
     hostName = machineId;
     useDHCP = false;
     interfaces.${network.interface}.ipv4.addresses = [{
-      address = machine.address;
-      prefixLength = network.prefixLength;
+      inherit (machine) address;
+      inherit (network) prefixLength;
     }];
     defaultGateway = network.gateway.address;
     nameservers = [ "1.1.1.1" "8.8.8.8" ];
     firewall = {
       enable = true;
-      allowedTCPPorts = [ inventory.ports.public.ssh ];
+      allowedTCPPorts = with inventory.ports.public; [ ssh ];
     };
   };
 
-  time.timeZone = "UTC";
+  time = {
+    timeZone = "UTC";
+  };
 
-  system.stateVersion = "24.11";
+  system = {
+    stateVersion = "24.11";
+  };
 }

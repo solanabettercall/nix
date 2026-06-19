@@ -1,6 +1,6 @@
 { config, pkgs, sopsnix, ... }:
 let
-  inventory = config.local.inventory;
+  inherit (config.local) inventory;
   mkUserSecrets = userId: _user: { config, ... }: {
     sops = {
       package = sopsnix.packages.${pkgs.stdenv.hostPlatform.system}.sops-install-secrets;
