@@ -24,20 +24,21 @@
 
   outputs = { nixpkgs, disko, sops-nix, home-manager, ... }:
     let
+      system = "x86_64-linux";
       inventory = import ./inventory;
       localLib = {
         network = import ./lib/network.nix { };
       };
       providerModules = {
-        xorek = ./modules/providers/xorek.nix;
-        virtualbox = ./modules/providers/virtualbox.nix;
+        xorek = ./nixos/providers/xorek.nix;
+        virtualbox = ./nixos/providers/virtualbox.nix;
       };
       mkMachine = { name }:
         let
           provider = inventory.providers.byMachine.${name};
         in
         nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
+          inherit system;
           specialArgs = {
             inherit inventory localLib;
             sopsnix = sops-nix;
@@ -47,20 +48,20 @@
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
-            ./modules/inventory.nix
-            ./modules/base/users.nix
-            ./modules/base/packages.nix
-            ./modules/profiles/machine.nix
-            ./modules/profiles/net-tools.nix
-            ./modules/base/nix.nix
-            ./modules/base/home-manager.nix
-            ./modules/secrets/system.nix
-            ./modules/secrets/users.nix
-            ./modules/network/hosts.nix
-            ./modules/ssh/server.nix
-            ./modules/ssh/client.nix
-            ./modules/wireguard/mesh.nix
-            ./modules/services/amneziawg.nix
+            ./nixos/inventory.nix
+            ./nixos/profiles/machine.nix
+            ./nixos/profiles/users.nix
+            ./nixos/profiles/home-manager.nix
+            ./nixos/profiles/hosts.nix
+            ./nixos/programs/system-tools.nix
+            ./nixos/programs/net-tools.nix
+            ./nixos/programs/nix.nix
+            ./nixos/programs/ssh-client.nix
+            ./nixos/services/sops-system.nix
+            ./nixos/services/sops-users.nix
+            ./nixos/services/openssh.nix
+            ./nixos/services/wireguard-mesh.nix
+            ./nixos/services/amneziawg.nix
             providerModules.${provider}
             ./hosts/${name}/disk-config.nix
             ./hosts/${name}/configuration.nix
@@ -68,6 +69,8 @@
         };
     in
     {
+      packages.${system} = import ./packages { };
+
       nixosConfigurations = {
         ares = mkMachine {
           name = "ares";
