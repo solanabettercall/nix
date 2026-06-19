@@ -1,0 +1,3 @@
+{
+  defaultUserId = "clackgot";
+}

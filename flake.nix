@@ -22,60 +22,61 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, sops-nix, home-manager, ... }:
+  outputs = { nixpkgs, disko, sops-nix, home-manager, ... }:
     let
-      inventory = import ./hosts.nix;
+      system = "x86_64-linux";
+      inventory = import ./inventory;
+      localLib = {
+        network = import ./lib/network.nix { };
+      };
       providerModules = {
-        xorek = ./modules/providers/xorek.nix;
-        virtualbox = ./modules/providers/virtualbox.nix;
+        xorek = ./nixos/providers/xorek.nix;
+        virtualbox = ./nixos/providers/virtualbox.nix;
       };
-      mkMachine = { name, provider, roles ? [ ] }: nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          inherit inventory;
-          sopsnix = sops-nix;
-          machineProvider = provider;
+      mkMachine = { name }:
+        let
+          provider = inventory.providers.byMachine.${name};
+        in
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit inventory localLib;
+            sopsnix = sops-nix;
+            machineId = name;
+          };
+          modules = [
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            ./nixos/inventory.nix
+            ./nixos/profiles/machine.nix
+            ./nixos/profiles/users.nix
+            ./nixos/profiles/home-manager.nix
+            ./nixos/profiles/hosts.nix
+            ./nixos/programs/system-tools.nix
+            ./nixos/programs/net-tools.nix
+            ./nixos/programs/nix.nix
+            ./nixos/programs/ssh-client.nix
+            ./nixos/services/sops-system.nix
+            ./nixos/services/sops-users.nix
+            ./nixos/services/openssh.nix
+            ./nixos/services/wireguard-mesh.nix
+            ./nixos/services/amneziawg.nix
+            providerModules.${provider}
+            ./hosts/${name}/disk-config.nix
+            ./hosts/${name}/configuration.nix
+          ];
         };
-        modules = [
-          disko.nixosModules.disko
-          sops-nix.nixosModules.sops
-          home-manager.nixosModules.home-manager
-          ./modules/base/users.nix
-          ./modules/base/packages.nix
-          ./modules/profiles/net-tools.nix
-          ./modules/base/nix.nix
-          ./modules/base/home-manager.nix
-          ./modules/secrets/system.nix
-          ./modules/secrets/clackgot.nix
-          ./modules/network/hosts.nix
-          ./modules/ssh/server.nix
-          ./modules/ssh/client.nix
-          ./modules/wireguard/mesh.nix
-          providerModules.${provider}
-          ./hosts/${name}/disk-config.nix
-          ./hosts/${name}/configuration.nix
-        ] ++ roles;
-      };
-    in {
+    in
+    {
+      packages.${system} = import ./packages { };
+
       nixosConfigurations = {
-        moscow = mkMachine {
-          name = "moscow";
-          provider = "xorek";
-          roles = [
-            ./roles/remnawave-panel.nix
-          ];
+        ares = mkMachine {
+          name = "ares";
         };
-        finland = mkMachine {
-          name = "finland";
-          provider = "xorek";
-          roles = [
-            ./roles/amneziawg-exit.nix
-            ./roles/remnawave-node.nix
-          ];
-        };
-        nixos1 = mkMachine {
-          name = "nixos1";
-          provider = "virtualbox";
+        hermes = mkMachine {
+          name = "hermes";
         };
       };
     };
