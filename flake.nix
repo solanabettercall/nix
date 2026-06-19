@@ -50,6 +50,7 @@
             ./modules/inventory.nix
             ./modules/base/users.nix
             ./modules/base/packages.nix
+            ./modules/profiles/machine.nix
             ./modules/profiles/net-tools.nix
             ./modules/base/nix.nix
             ./modules/base/home-manager.nix

@@ -1,43 +1,7 @@
-{ config, machineId, ... }:
-let
-  inherit (config.local) inventory;
-  machine = inventory.machines.${machineId};
-  network = inventory.network.staticIpv4.byMachine.${machineId};
-in
 {
   imports = [
     ./hardware-configuration.nix
   ];
 
-  boot.loader.grub = {
-    enable = true;
-    device = "nodev";
-  };
-
-  networking = {
-    hostName = machineId;
-    useDHCP = false;
-    interfaces.${network.interface}.ipv4.addresses = [{
-      inherit (machine) address;
-      inherit (network) prefixLength;
-    }];
-    defaultGateway = {
-      inherit (network.gateway) address interface;
-    };
-    nameservers = [ "8.8.8.8" "1.1.1.1" ];
-    firewall = {
-      enable = true;
-      allowedTCPPorts = with inventory.ports.public; [ ssh ];
-    };
-  };
-
   local.services.amneziawg.enable = true;
-
-  time = {
-    timeZone = "UTC";
-  };
-
-  system = {
-    stateVersion = "24.11";
-  };
 }
