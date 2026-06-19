@@ -10,12 +10,11 @@ let
     )
     inventory.machines;
   wireguardMembers = inventory.wireguard.mesh.members.byMachine;
-  wireguardSubnet = inventory.network.subnets.${inventory.wireguard.mesh.subnetId};
-  wireguardSubnetAddress = localLib.network.ipv4.addressInSubnet24 wireguardSubnet;
+  wireguardAddressForMachine = localLib.network.ipv4.machineAddress inventory inventory.wireguard.mesh.subnetId;
 
   wireguardAddress = name:
     if builtins.hasAttr name wireguardMembers
-    then wireguardSubnetAddress inventory.network.allocations.${inventory.wireguard.mesh.subnetId}.machines.${name}
+    then wireguardAddressForMachine name
     else null;
 
   machineHostEntries = lib.flatten (

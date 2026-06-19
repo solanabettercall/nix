@@ -7,9 +7,8 @@ let
   server = amnezia.servers.byMachine.${hostName};
   network = inventory.network.staticIpv4.byMachine.${hostName};
   subnet = inventory.network.subnets.${amnezia.subnetId};
-  subnetAddress = localLib.network.ipv4.addressInSubnet24 subnet;
-  machineAddress = name: subnetAddress inventory.network.allocations.${amnezia.subnetId}.machines.${name};
-  clientAddress = name: subnetAddress inventory.network.allocations.${amnezia.subnetId}.clients.${name};
+  machineAddress = localLib.network.ipv4.machineAddress inventory amnezia.subnetId;
+  clientAddress = localLib.network.ipv4.clientAddress inventory amnezia.subnetId;
   clientConfig = clientId:
     let
       client = amnezia.clients.${clientId};

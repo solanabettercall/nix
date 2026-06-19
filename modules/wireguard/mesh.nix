@@ -8,9 +8,8 @@ let
   inherit (mesh) clients;
   interfaceName = mesh.interface;
   subnet = inventory.network.subnets.${mesh.subnetId};
-  subnetAddress = localLib.network.ipv4.addressInSubnet24 subnet;
-  machineAddress = name: subnetAddress inventory.network.allocations.${mesh.subnetId}.machines.${name};
-  clientAddress = name: subnetAddress inventory.network.allocations.${mesh.subnetId}.clients.${name};
+  machineAddress = localLib.network.ipv4.machineAddress inventory mesh.subnetId;
+  clientAddress = localLib.network.ipv4.clientAddress inventory mesh.subnetId;
   publicKey = peer: inventory.wireguard.publicKeys.${peer.publicKeyId};
   wireguard =
     if builtins.hasAttr hostName members

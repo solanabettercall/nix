@@ -17,8 +17,7 @@ let
     )
     inventory.machines;
   wireguardMembers = inventory.wireguard.mesh.members.byMachine;
-  wireguardSubnet = inventory.network.subnets.${inventory.wireguard.mesh.subnetId};
-  wireguardSubnetAddress = localLib.network.ipv4.addressInSubnet24 wireguardSubnet;
+  wireguardAddress = localLib.network.ipv4.machineAddress inventory inventory.wireguard.mesh.subnetId;
   machinesWithWireguard = lib.filterAttrs
     (name: _machine:
       builtins.hasAttr name wireguardMembers
@@ -26,7 +25,6 @@ let
     knownMachines;
 
   machinePort = _name: inventory.ports.public.ssh;
-  wireguardAddress = name: wireguardSubnetAddress inventory.network.allocations.${inventory.wireguard.mesh.subnetId}.machines.${name};
 
   knownHostNames = name: machine:
     [ name ] ++ (
