@@ -1,8 +1,8 @@
-{ config, ... }:
+{ config, machineId, ... }:
 let
   inventory = config.local.inventory;
-  machine = inventory.machines.hermes;
-  network = inventory.network.staticIpv4.byMachine.hermes;
+  machine = inventory.machines.${machineId};
+  network = inventory.network.staticIpv4.byMachine.${machineId};
 in
 {
   imports = [
@@ -15,7 +15,7 @@ in
   };
 
   networking = {
-    hostName = "hermes";
+    hostName = machineId;
     useDHCP = false;
     interfaces.${network.interface}.ipv4.addresses = [{
       address = machine.address;

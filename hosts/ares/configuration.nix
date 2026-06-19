@@ -1,8 +1,8 @@
-{ config, ... }:
+{ config, machineId, ... }:
 let
   inventory = config.local.inventory;
-  machine = inventory.machines.ares;
-  network = inventory.network.staticIpv4.byMachine.ares;
+  machine = inventory.machines.${machineId};
+  network = inventory.network.staticIpv4.byMachine.${machineId};
 in
 {
   imports = [
@@ -17,7 +17,7 @@ in
 
   # ── Сеть ──────────────────────────────────────────────────────────────────
   networking = {
-    hostName = "ares";
+    hostName = machineId;
     useDHCP = false;
     interfaces.${network.interface}.ipv4.addresses = [{
       address = machine.address;
