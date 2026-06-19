@@ -25,18 +25,21 @@
   outputs = { nixpkgs, disko, sops-nix, home-manager, ... }:
     let
       inventory = import ./inventory;
+      localLib = {
+        network = import ./lib/network.nix { };
+      };
       providerModules = {
         xorek = ./modules/providers/xorek.nix;
         virtualbox = ./modules/providers/virtualbox.nix;
       };
-      mkMachine = { name, roles ? [ ] }:
+      mkMachine = { name }:
         let
           provider = inventory.providers.byMachine.${name};
         in
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
-            inherit inventory;
+            inherit inventory localLib;
             sopsnix = sops-nix;
             machineId = name;
           };
@@ -56,19 +59,17 @@
             ./modules/ssh/server.nix
             ./modules/ssh/client.nix
             ./modules/wireguard/mesh.nix
+            ./modules/services/amneziawg.nix
             providerModules.${provider}
             ./hosts/${name}/disk-config.nix
             ./hosts/${name}/configuration.nix
-          ] ++ roles;
+          ];
         };
     in
     {
       nixosConfigurations = {
         ares = mkMachine {
           name = "ares";
-          roles = [
-            ./roles/amneziawg-exit.nix
-          ];
         };
         hermes = mkMachine {
           name = "hermes";

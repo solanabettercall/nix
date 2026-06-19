@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, localLib, ... }:
 let
   inherit (config.networking) hostName;
   inherit (config.local) inventory;
@@ -7,6 +7,10 @@ let
   members = mesh.members.byMachine;
   inherit (mesh) clients;
   interfaceName = mesh.interface;
+  subnet = inventory.network.subnets.${mesh.subnetId};
+  subnetAddress = localLib.network.ipv4.addressInSubnet24 subnet;
+  machineAddress = name: subnetAddress inventory.network.allocations.${mesh.subnetId}.machines.${name};
+  clientAddress = name: subnetAddress inventory.network.allocations.${mesh.subnetId}.clients.${name};
   publicKey = peer: inventory.wireguard.publicKeys.${peer.publicKeyId};
   wireguard =
     if builtins.hasAttr hostName members
@@ -22,14 +26,14 @@ let
     {
       publicKey = publicKey peer;
       endpoint = "${machines.${name}.address}:${toString peer.listenPort}";
-      allowedIPs = [ "${peer.address}/32" ];
+      allowedIPs = [ "${machineAddress name}/32" ];
     } // lib.optionalAttrs (mesh.persistentKeepalive != null) {
       inherit (mesh) persistentKeepalive;
     };
 
-  clientPeerConfig = _name: peer: {
+  clientPeerConfig = name: peer: {
     publicKey = publicKey peer;
-    allowedIPs = [ "${peer.address}/32" ];
+    allowedIPs = [ "${clientAddress name}/32" ];
   };
 in
 lib.mkIf (wireguard != null) {
@@ -44,7 +48,7 @@ lib.mkIf (wireguard != null) {
     };
 
     wireguard.interfaces.${interfaceName} = {
-      ips = [ "${wireguard.address}/${toString mesh.prefixLength}" ];
+      ips = [ "${machineAddress hostName}/${toString subnet.prefixLength}" ];
       inherit (mesh) mtu;
       inherit (wireguard) listenPort;
       privateKeyFile = config.sops.secrets."wireguard/${hostName}/private_key".path;

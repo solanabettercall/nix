@@ -1,16 +1,25 @@
-{ lib, inventory, ... }:
+{ lib, inventory, localLib, ... }:
 let
   inherit (lib) mkOption types;
   cfg = inventory;
 
   machineIds = builtins.attrNames cfg.machines;
   userIds = builtins.attrNames cfg.users;
+  subnetIds = builtins.attrNames cfg.network.subnets;
   sshPublicKeyIds = builtins.attrNames cfg.ssh.publicKeys;
   wireguardPublicKeyIds = builtins.attrNames cfg.wireguard.publicKeys;
   knownMachine = machineId: builtins.hasAttr machineId cfg.machines;
   knownUser = userId: builtins.hasAttr userId cfg.users;
+  knownSubnet = subnetId: builtins.hasAttr subnetId cfg.network.subnets;
   knownSshPublicKey = publicKeyId: builtins.hasAttr publicKeyId cfg.ssh.publicKeys;
   knownWireGuardPublicKey = publicKeyId: builtins.hasAttr publicKeyId cfg.wireguard.publicKeys;
+  isIpv4Subnet24 = subnet: localLib.network.ipv4.isSubnet24 subnet;
+  hostNumbers = allocation: (builtins.attrValues allocation.machines) ++ (builtins.attrValues allocation.clients);
+  hasDuplicateHostNumbers = allocation:
+    let
+      numbers = hostNumbers allocation;
+    in
+    builtins.length numbers != builtins.length (lib.unique numbers);
 
   unknownProviderMachines = lib.filterAttrs
     (
@@ -35,6 +44,30 @@ let
       machineId: _network: !(knownMachine machineId)
     )
     cfg.network.staticIpv4.byMachine;
+
+  invalidSubnets = lib.filterAttrs
+    (
+      _subnetId: subnet: !(isIpv4Subnet24 subnet)
+    )
+    cfg.network.subnets;
+
+  unknownAllocationSubnets = lib.filterAttrs
+    (
+      subnetId: _allocation: !(knownSubnet subnetId)
+    )
+    cfg.network.allocations;
+
+  unknownAllocationMachines = lib.filterAttrs
+    (
+      _subnetId: allocation: builtins.any (machineId: !(knownMachine machineId)) (builtins.attrNames allocation.machines)
+    )
+    cfg.network.allocations;
+
+  duplicateAllocationHostNumbers = lib.filterAttrs
+    (
+      _subnetId: hasDuplicateHostNumbers
+    )
+    cfg.network.allocations;
 
   unknownSshHostKeyMachines = lib.filterAttrs
     (
@@ -84,10 +117,56 @@ let
     )
     cfg.wireguard.mesh.clients;
 
+  missingWireGuardMachineAllocations = lib.filterAttrs
+    (
+      machineId: _member: !(builtins.hasAttr machineId cfg.network.allocations.${cfg.wireguard.mesh.subnetId}.machines)
+    )
+    cfg.wireguard.mesh.members.byMachine;
+
+  missingWireGuardClientAllocations = lib.filterAttrs
+    (
+      clientId: _client: !(builtins.hasAttr clientId cfg.network.allocations.${cfg.wireguard.mesh.subnetId}.clients)
+    )
+    cfg.wireguard.mesh.clients;
+
+  unknownAmneziaWireGuardMachines = lib.filterAttrs
+    (
+      machineId: _server: !(knownMachine machineId)
+    )
+    cfg.wireguard.amnezia.servers.byMachine;
+
+  knownAmneziaWireGuardClient = clientId: builtins.hasAttr clientId cfg.wireguard.amnezia.clients;
+
+  unknownAmneziaWireGuardServerClients = lib.filterAttrs
+    (
+      _machineId: server: builtins.any (clientId: !(knownAmneziaWireGuardClient clientId)) server.clients
+    )
+    cfg.wireguard.amnezia.servers.byMachine;
+
+  unknownAmneziaWireGuardClientPublicKeyIds = lib.filterAttrs
+    (
+      _clientId: client: !(knownWireGuardPublicKey client.publicKeyId)
+    )
+    cfg.wireguard.amnezia.clients;
+
+  missingAmneziaWireGuardMachineAllocations = lib.filterAttrs
+    (
+      machineId: _server: !(builtins.hasAttr machineId cfg.network.allocations.${cfg.wireguard.amnezia.subnetId}.machines)
+    )
+    cfg.wireguard.amnezia.servers.byMachine;
+
+  missingAmneziaWireGuardClientAllocations = lib.filterAttrs
+    (
+      clientId: _client: !(builtins.hasAttr clientId cfg.network.allocations.${cfg.wireguard.amnezia.subnetId}.clients)
+    )
+    cfg.wireguard.amnezia.clients;
+
   machineIdType = types.enum machineIds;
   userIdType = types.enum userIds;
+  subnetIdType = types.enum subnetIds;
   sshPublicKeyIdType = types.enum sshPublicKeyIds;
   wireguardPublicKeyIdType = types.enum wireguardPublicKeyIds;
+  allocationHostType = types.ints.between 1 254;
 in
 {
   options.local.inventory = mkOption {
@@ -164,24 +243,54 @@ in
           };
         };
 
-        network.staticIpv4.byMachine = mkOption {
-          type = types.attrsOf (types.submodule {
-            options = {
-              interface = mkOption { type = types.str; };
-              prefixLength = mkOption { type = types.ints.unsigned; };
-              gateway = mkOption {
-                type = types.submodule {
-                  options = {
-                    address = mkOption { type = types.str; };
-                    interface = mkOption {
-                      type = types.nullOr types.str;
-                      default = null;
+        network = {
+          staticIpv4.byMachine = mkOption {
+            type = types.attrsOf (types.submodule {
+              options = {
+                interface = mkOption { type = types.str; };
+                prefixLength = mkOption { type = types.ints.unsigned; };
+                gateway = mkOption {
+                  type = types.submodule {
+                    options = {
+                      address = mkOption { type = types.str; };
+                      interface = mkOption {
+                        type = types.nullOr types.str;
+                        default = null;
+                      };
                     };
                   };
                 };
               };
-            };
-          });
+            });
+          };
+
+          subnets = mkOption {
+            type = types.attrsOf (types.submodule {
+              options = {
+                address = mkOption {
+                  type = types.str;
+                  description = "IPv4 network address, for example 10.77.0.0.";
+                };
+                prefixLength = mkOption {
+                  type = types.enum [ 24 ];
+                  description = "Subnet prefix length. Only /24 allocations are currently supported.";
+                };
+              };
+            });
+          };
+
+          allocations = mkOption {
+            type = types.attrsOf (types.submodule {
+              options = {
+                machines = mkOption {
+                  type = types.attrsOf allocationHostType;
+                };
+                clients = mkOption {
+                  type = types.attrsOf allocationHostType;
+                };
+              };
+            });
+          };
         };
 
         ssh = mkOption {
@@ -213,15 +322,14 @@ in
               mesh = mkOption {
                 type = types.submodule {
                   options = {
+                    subnetId = mkOption { type = subnetIdType; };
                     interface = mkOption { type = types.str; };
                     mtu = mkOption { type = types.nullOr types.ints.unsigned; };
-                    prefixLength = mkOption { type = types.ints.unsigned; };
                     persistentKeepalive = mkOption { type = types.nullOr types.ints.unsigned; };
                     trusted = mkOption { type = types.bool; };
                     members.byMachine = mkOption {
                       type = types.attrsOf (types.submodule {
                         options = {
-                          address = mkOption { type = types.str; };
                           listenPort = mkOption { type = types.port; };
                           publicKeyId = mkOption { type = wireguardPublicKeyIdType; };
                         };
@@ -230,7 +338,32 @@ in
                     clients = mkOption {
                       type = types.attrsOf (types.submodule {
                         options = {
-                          address = mkOption { type = types.str; };
+                          publicKeyId = mkOption { type = wireguardPublicKeyIdType; };
+                        };
+                      });
+                    };
+                  };
+                };
+              };
+              amnezia = mkOption {
+                type = types.submodule {
+                  options = {
+                    subnetId = mkOption { type = subnetIdType; };
+                    interface = mkOption { type = types.str; };
+                    extraOptions = mkOption {
+                      type = types.attrsOf types.int;
+                    };
+                    servers.byMachine = mkOption {
+                      type = types.attrsOf (types.submodule {
+                        options = {
+                          listenPort = mkOption { type = types.port; };
+                          clients = mkOption { type = types.listOf types.str; };
+                        };
+                      });
+                    };
+                    clients = mkOption {
+                      type = types.attrsOf (types.submodule {
+                        options = {
                           publicKeyId = mkOption { type = wireguardPublicKeyIdType; };
                         };
                       });
@@ -275,6 +408,22 @@ in
         message = "local.inventory.network.staticIpv4.byMachine references unknown machines: ${toString (builtins.attrNames unknownStaticIpv4Machines)}";
       }
       {
+        assertion = invalidSubnets == { };
+        message = "local.inventory.network.subnets contains unsupported subnets; only IPv4 /24 network addresses ending in .0 are currently supported: ${toString (builtins.attrNames invalidSubnets)}";
+      }
+      {
+        assertion = unknownAllocationSubnets == { };
+        message = "local.inventory.network.allocations references unknown subnets: ${toString (builtins.attrNames unknownAllocationSubnets)}";
+      }
+      {
+        assertion = unknownAllocationMachines == { };
+        message = "local.inventory.network.allocations references unknown machines in subnets: ${toString (builtins.attrNames unknownAllocationMachines)}";
+      }
+      {
+        assertion = duplicateAllocationHostNumbers == { };
+        message = "local.inventory.network.allocations contains duplicate host numbers in subnets: ${toString (builtins.attrNames duplicateAllocationHostNumbers)}";
+      }
+      {
         assertion = unknownSshHostKeyMachines == { };
         message = "local.inventory.ssh.hostKeys.byMachine references unknown machines: ${toString (builtins.attrNames unknownSshHostKeyMachines)}";
       }
@@ -305,6 +454,34 @@ in
       {
         assertion = unknownWireGuardClientPublicKeyIds == { };
         message = "local.inventory.wireguard.mesh.clients references unknown WireGuard public keys for clients: ${toString (builtins.attrNames unknownWireGuardClientPublicKeyIds)}";
+      }
+      {
+        assertion = missingWireGuardMachineAllocations == { };
+        message = "local.inventory.wireguard.mesh.members.byMachine has machines without allocation in subnet ${cfg.wireguard.mesh.subnetId}: ${toString (builtins.attrNames missingWireGuardMachineAllocations)}";
+      }
+      {
+        assertion = missingWireGuardClientAllocations == { };
+        message = "local.inventory.wireguard.mesh.clients has clients without allocation in subnet ${cfg.wireguard.mesh.subnetId}: ${toString (builtins.attrNames missingWireGuardClientAllocations)}";
+      }
+      {
+        assertion = unknownAmneziaWireGuardMachines == { };
+        message = "local.inventory.wireguard.amnezia.servers.byMachine references unknown machines: ${toString (builtins.attrNames unknownAmneziaWireGuardMachines)}";
+      }
+      {
+        assertion = unknownAmneziaWireGuardServerClients == { };
+        message = "local.inventory.wireguard.amnezia.servers.byMachine references unknown AmneziaWG clients for machines: ${toString (builtins.attrNames unknownAmneziaWireGuardServerClients)}";
+      }
+      {
+        assertion = unknownAmneziaWireGuardClientPublicKeyIds == { };
+        message = "local.inventory.wireguard.amnezia.clients references unknown WireGuard public keys: ${toString (builtins.attrNames unknownAmneziaWireGuardClientPublicKeyIds)}";
+      }
+      {
+        assertion = missingAmneziaWireGuardMachineAllocations == { };
+        message = "local.inventory.wireguard.amnezia.servers.byMachine has machines without allocation in subnet ${cfg.wireguard.amnezia.subnetId}: ${toString (builtins.attrNames missingAmneziaWireGuardMachineAllocations)}";
+      }
+      {
+        assertion = missingAmneziaWireGuardClientAllocations == { };
+        message = "local.inventory.wireguard.amnezia.clients has clients without allocation in subnet ${cfg.wireguard.amnezia.subnetId}: ${toString (builtins.attrNames missingAmneziaWireGuardClientAllocations)}";
       }
     ];
   };

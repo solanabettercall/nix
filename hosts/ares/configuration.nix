@@ -31,6 +31,8 @@ in
     };
   };
 
+  local.services.amneziawg.enable = true;
+
   time = {
     timeZone = "UTC";
   };

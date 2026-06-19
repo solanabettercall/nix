@@ -79,6 +79,38 @@ in
   };
 
   network = {
+    subnets = {
+      wg-mesh = {
+        address = "10.77.0.0";
+        prefixLength = 24;
+      };
+
+      awg-exit = {
+        address = "10.78.0.0";
+        prefixLength = 24;
+      };
+    };
+
+    allocations = {
+      wg-mesh = {
+        machines = {
+          ares = 2;
+        };
+        clients = {
+          bubble-home = 10;
+        };
+      };
+
+      awg-exit = {
+        machines = {
+          ares = 1;
+        };
+        clients = {
+          bubble-home = 10;
+        };
+      };
+    };
+
     staticIpv4.byMachine = {
       ares = {
         interface = "ens3";
@@ -128,21 +160,46 @@ in
     };
 
     mesh = {
+      subnetId = "wg-mesh";
       interface = "wg0";
       mtu = 1280;
-      prefixLength = 24;
       persistentKeepalive = 25;
       trusted = true;
       members.byMachine = {
         ares = {
-          address = "10.77.0.2";
           listenPort = 51820;
           publicKeyId = "ares-mesh";
         };
       };
       clients = {
         bubble-home = {
-          address = "10.77.0.10";
+          publicKeyId = "bubble-home";
+        };
+      };
+    };
+
+    amnezia = {
+      subnetId = "awg-exit";
+      interface = "awg0";
+      extraOptions = {
+        Jc = 5;
+        Jmin = 50;
+        Jmax = 1000;
+        S1 = 32;
+        S2 = 64;
+        H1 = 13245871;
+        H2 = 22345791;
+        H3 = 32342791;
+        H4 = 42343119;
+      };
+      servers.byMachine = {
+        ares = {
+          listenPort = 51821;
+          clients = [ "bubble-home" ];
+        };
+      };
+      clients = {
+        bubble-home = {
           publicKeyId = "bubble-home";
         };
       };

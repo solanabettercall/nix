@@ -1,4 +1,4 @@
-{ lib, config, ... }:
+{ lib, config, localLib, ... }:
 let
   inherit (config.local) inventory;
   inherit (config.networking) hostName;
@@ -17,6 +17,8 @@ let
     )
     inventory.machines;
   wireguardMembers = inventory.wireguard.mesh.members.byMachine;
+  wireguardSubnet = inventory.network.subnets.${inventory.wireguard.mesh.subnetId};
+  wireguardSubnetAddress = localLib.network.ipv4.addressInSubnet24 wireguardSubnet;
   machinesWithWireguard = lib.filterAttrs
     (name: _machine:
       builtins.hasAttr name wireguardMembers
@@ -24,7 +26,7 @@ let
     knownMachines;
 
   machinePort = _name: inventory.ports.public.ssh;
-  wireguardAddress = name: wireguardMembers.${name}.address;
+  wireguardAddress = name: wireguardSubnetAddress inventory.network.allocations.${inventory.wireguard.mesh.subnetId}.machines.${name};
 
   knownHostNames = name: machine:
     [ name ] ++ (
